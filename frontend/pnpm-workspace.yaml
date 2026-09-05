@@ -1,0 +1,3 @@
+allowBuilds:
+  '@mui/x-telemetry': true
+  core-js: true
