@@ -96,7 +96,7 @@ function createSeries(
         segment.prodId === selectedProductionId;
         
     
-    values[day - 1] = segment.massTotal;
+    values[day - 1] = segment.realTotal;
 
     return {
 

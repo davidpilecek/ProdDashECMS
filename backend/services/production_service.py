@@ -17,11 +17,6 @@ def _parse_production_unit(row: dict) -> dict:
         "prodNum": row["PROD_NUM"],
         "prodDesc": row["PROD_DESC"],
         "recipeName": row["RECIPE_NAME"],
-        "add1SP": _safe_float(row["ADD1_RECIPE_SP"]),
-        "add2SP": _safe_float(row["ADD2_RECIPE_SP"]),
-        "add3SP": _safe_float(row["ADD3_RECIPE_SP"]),
-        "add4SP": _safe_float(row["ADD4_RECIPE_SP"]),
-        "add5SP": _safe_float(row["ADD5_RECIPE_SP"]),
     }
 
 def _safe_float(value):
@@ -40,22 +35,28 @@ def _parse_segment(row: dict) -> dict:
         "stopTime": row["STOP_TIME"],
 
         "runTime": _safe_float(row["RUN_TIME"]),
-        "massTotal": _safe_float(row["MASS_TOTAL"]),
 
-        "add1Total": _safe_float(row["ADD1_TOTAL"]),
-        "add2Total": _safe_float(row["ADD2_TOTAL"]),
-        "add3Total": _safe_float(row["ADD3_TOTAL"]),
-        "add4Total": _safe_float(row["ADD4_TOTAL"]),
-        "add5Total": _safe_float(row["ADD5_TOTAL"]),
+        "realTotal": _safe_float(row["REAL_TOTAL_PROD"]),
+        "realSteam2Cond": _safe_float(row["REAL_STEAM2COND"]),
+        "realSteam2Extr": _safe_float(row["REAL_STEAM2EXTR"]),
+        "realWater2Cond": _safe_float(row["REAL_WATER2COND"]),
+        "realOil2CondExtr": _safe_float(row["REAL_OIL2CONDEXTR"]),
+        "realWater2Extr": _safe_float(row["REAL_WATER2EXTR"]),
+        "realAdd2CondExtr": _safe_float(row["REAL_ADD2CONDEXTR"]),
+        "realAdd5": _safe_float(row["REAL_ADD5"]),
+        "realAdd6": _safe_float(row["REAL_ADD6"]),
 
-        "totalInclAdditives":
-            _safe_float(row["TOTAL_INCL_ADDITIVES"]),
+        "wasteTotal": _safe_float(row["WASTE_TOTAL_PROD"]),
+        "wasteSteam2Cond": _safe_float(row["WASTE_STEAM2COND"]),
+        "wasteSteam2Extr": _safe_float(row["WASTE_STEAM2EXTR"]),
+        "wasteWater2Cond": _safe_float(row["WASTE_WATER2COND"]),
+        "wasteOil2CondExtr": _safe_float(row["WASTE_OIL2CONDEXTR"]),
+        "wasteWater2Extr": _safe_float(row["WASTE_WATER2EXTR"]),
+        "wasteAdd2CondExtr": _safe_float(row["WASTE_ADD2CONDEXTR"]),
+        "wasteAdd5": _safe_float(row["WASTE_ADD5"]),
+        "wasteAdd6": _safe_float(row["WASTE_ADD6"]),
 
-        "add1Percent": _safe_float(row["ADD1_PERCENT"]),
-        "add2Percent": _safe_float(row["ADD2_PERCENT"]),
-        "add3Percent": _safe_float(row["ADD3_PERCENT"]),
-        "add4Percent": _safe_float(row["ADD4_PERCENT"]),
-        "add5Percent": _safe_float(row["ADD5_PERCENT"]),
+    
     }
 
 def load_segments(month: int, year: int) -> list[dict]:
@@ -119,13 +120,11 @@ def load_production_month(
     )
 
     for production_unit in production_units:
-        setpoints = [production_unit["add1SP"], production_unit["add2SP"], production_unit["add3SP"], production_unit["add4SP"], production_unit["add5SP"]]
 
         production_unit["statistics"] = (
             calculate_production_unit_statistics(
-                segments,
-                production_unit["prodId"],
-                setpoints=setpoints
+                segments = segments,
+                prod_id = production_unit["prodId"]
             )
         )
 

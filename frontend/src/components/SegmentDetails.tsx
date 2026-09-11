@@ -98,7 +98,7 @@ export default function SegmentDetails({
 
                 <DetailItem
                     label="Mass"
-                    value={`${segment.massTotal.toFixed(2)} t`}
+                    value={`${segment.realTotal.toFixed(2)} t`}
                 />
             </Box>
         </Box>

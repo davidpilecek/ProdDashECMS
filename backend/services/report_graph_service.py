@@ -52,9 +52,7 @@ def generate_production_graph(
         if day < 1 or day > days_in_month:
             continue
 
-        daily_segments[day - 1].append(
-            segment
-        )
+        daily_segments[day - 1].append(segment)
 
     # --------------------------------------------------
     # Create figure
@@ -77,11 +75,11 @@ def generate_production_graph(
 
         for segment in day_segments:
 
-            mass = segment["massTotal"]
+            real_total = segment["realTotal"]
 
             axis.bar(
                 day_index + 1,
-                mass,
+                real_total,
                 bottom=bottom,
                 width=0.8,
                 color=SEGMENT_COLOR,
@@ -89,7 +87,7 @@ def generate_production_graph(
                 linewidth=1.0,
             )
 
-            bottom += mass
+            bottom += real_total
 
     # --------------------------------------------------
     # X axis
@@ -118,7 +116,7 @@ def generate_production_graph(
     )
 
     axis.set_ylabel(
-        "Mass (t)"
+        "Real Production (t)"
     )
 
     # --------------------------------------------------

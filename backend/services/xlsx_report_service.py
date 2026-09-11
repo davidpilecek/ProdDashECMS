@@ -1,10 +1,11 @@
 import io
+from datetime import datetime
 
 import xlsxwriter
-from datetime import datetime
 
 from services.production_service import load_production_month
 from services.statistics_service import calculate_production_statistics
+
 
 class XlsxReportService:
 
@@ -16,16 +17,18 @@ class XlsxReportService:
 
         output = io.BytesIO()
 
-        workbook = xlsxwriter.Workbook(output, {
-            "in_memory": True
-        })
+        workbook = xlsxwriter.Workbook(
+            output,
+            {
+                "in_memory": True
+            }
+        )
 
         datetime_format = workbook.add_format({
             "border": 1,
             "num_format": "dd/mm/yyyy hh:mm:ss",
         })
 
-        # Formats
         header_format = workbook.add_format({
             "bold": True,
             "border": 1,
@@ -46,14 +49,23 @@ class XlsxReportService:
 
         summary = workbook.add_worksheet("Summary")
 
-        statistics = calculate_production_statistics(
-            segments=segments,
-            selected_segment_id=segments[-1]["segmentId"],
+        if segments:
+            statistics = calculate_production_statistics(
+                segments=segments,
+                selected_segment_id=segments[-1]["segmentId"],
+            )
+
+            monthly_rate = statistics["month"]["rate"]
+        else:
+            monthly_rate = 0.0
+
+        total_produced = sum(
+            unit["statistics"]["realTotal"]
+            for unit in production_units
         )
 
-        monthly_rate = statistics["month"]["rate"]
-        total_produced = sum(
-            unit["statistics"]["mass"]
+        total_waste = sum(
+            unit["statistics"]["wasteTotal"]
             for unit in production_units
         )
 
@@ -63,6 +75,7 @@ class XlsxReportService:
             ["Segments", len(segments)],
             ["Average Production Rate", monthly_rate],
             ["Total Produced", total_produced],
+            ["Total Waste", total_waste],
         ]
 
         for row, values in enumerate(summary_data):
@@ -86,63 +99,126 @@ class XlsxReportService:
         headers = [
             "Production ID",
             "Recipe",
-            "Produced (t)",
-            "Produced incl. Additives (t)",
+            "Real Total (t)",
+            "Waste Total (t)",
             "Runtime (hours)",
-            "Rate (tons/hour)",
-            "Additive 1 (t)",
-            "Additive 2 (t)",
-            "Additive 3 (t)",
-            "Additive 4 (t)",
-            "Additive 5 (t)",
-            "Additive 1 (%)",
-            "Additive 2 (%)",
-            "Additive 3 (%)",
-            "Additive 4 (%)",
-            "Additive 5 (%)",
+            "Rate (t/hour)",
+            "Steam 2 Cond (t)",
+            "Steam 2 Extr (t)",
+            "Water 2 Cond (t)",
+            "Oil 2 Cond Extr (t)",
+            "Water 2 Extr (t)",
+            "Add 2 Cond Extr (t)",
+            "Add 5 (t)",
+            "Add 6 (t)",
+            "Steam 2 Cond (%)",
+            "Steam 2 Extr (%)",
+            "Water 2 Cond (%)",
+            "Oil 2 Cond Extr (%)",
+            "Water 2 Extr (%)",
+            "Add 2 Cond Extr (%)",
+            "Add 5 (%)",
+            "Add 6 (%)",
         ]
 
         for col, header in enumerate(headers):
-            production_sheet.write(0, col, header, header_format)
-
-        for row, unit in enumerate(production_units, start=1):
-            stats = unit["statistics"]
-            additives = stats["additives"]
-
-            production_sheet.write(row, 0, unit["prodId"], cell_format)
-            production_sheet.write(row, 1, unit["recipeName"], cell_format)
-            production_sheet.write(row, 2, stats["mass"], number_format)
             production_sheet.write(
-                row, 3, stats["totalInclAdditives"], number_format
+                0,
+                col,
+                header,
+                header_format,
             )
-            production_sheet.write(row, 4, stats["hours"], number_format)
-            production_sheet.write(row, 5, stats["rate"], number_format)
 
-            for i in range(1, 6):
+        real_fields = [
+            "realSteam2Cond",
+            "realSteam2Extr",
+            "realWater2Cond",
+            "realOil2CondExtr",
+            "realWater2Extr",
+            "realAdd2CondExtr",
+            "realAdd5",
+            "realAdd6",
+        ]
+
+        for row, unit in enumerate(
+            production_units,
+            start=1,
+        ):
+            stats = unit["statistics"]
+
+            production_sheet.write(
+                row,
+                0,
+                unit["prodId"],
+                cell_format,
+            )
+
+            production_sheet.write(
+                row,
+                1,
+                unit["recipeName"],
+                cell_format,
+            )
+
+            production_sheet.write(
+                row,
+                2,
+                stats["realTotal"],
+                number_format,
+            )
+
+            production_sheet.write(
+                row,
+                3,
+                stats["wasteTotal"],
+                number_format,
+            )
+
+            production_sheet.write(
+                row,
+                4,
+                stats["hours"],
+                number_format,
+            )
+
+            production_sheet.write(
+                row,
+                5,
+                stats["rate"],
+                number_format,
+            )
+
+            # Real material masses
+            for index, field in enumerate(real_fields):
                 production_sheet.write(
                     row,
-                    5 + i,
-                    additives[f"add{i}"]["mass"],
+                    6 + index,
+                    stats["real"][field],
                     number_format,
                 )
 
-            for i in range(1, 6):
+            # Real material percentages
+            for index, field in enumerate(real_fields):
                 production_sheet.write(
                     row,
-                    10 + i,
-                    additives[f"add{i}"]["percent"],
+                    14 + index,
+                    stats["realPercentages"][field],
                     number_format,
                 )
 
         production_sheet.freeze_panes(1, 0)
+
         production_sheet.autofilter(
-            0, 0, len(production_units), len(headers) - 1
+            0,
+            0,
+            len(production_units),
+            len(headers) - 1,
         )
 
         production_sheet.set_column("A:A", 18)
         production_sheet.set_column("B:B", 25)
         production_sheet.set_column("C:F", 18)
-        production_sheet.set_column("G:P", 15)
+        production_sheet.set_column("G:V", 18)
 
         # --------------------------------------------------
         # Segments
@@ -156,59 +232,125 @@ class XlsxReportService:
             "Start",
             "Stop",
             "Runtime (hours)",
-            "Mass (t)",
+            "Real Total (t)",
+            "Waste Total (t)",
+            "Steam 2 Cond (t)",
+            "Steam 2 Extr (t)",
+            "Water 2 Cond (t)",
+            "Oil 2 Cond Extr (t)",
+            "Water 2 Extr (t)",
+            "Add 2 Cond Extr (t)",
+            "Add 5 (t)",
+            "Add 6 (t)",
         ]
 
         for col, header in enumerate(segment_headers):
-            segment_sheet.write(0, col, header, header_format)
-
-        for row, segment in enumerate(segments, start=1):
             segment_sheet.write(
-                row, 0,
+                0,
+                col,
+                header,
+                header_format,
+            )
+
+        for row, segment in enumerate(
+            segments,
+            start=1,
+        ):
+            segment_sheet.write(
+                row,
+                0,
                 segment["segmentId"],
                 cell_format,
             )
 
             segment_sheet.write(
-                row, 1,
+                row,
+                1,
                 segment["prodId"],
                 cell_format,
             )
 
             segment_sheet.write_datetime(
-                row, 2,
-                datetime.fromisoformat(segment["startTime"]),
+                row,
+                2,
+                datetime.fromisoformat(
+                    segment["startTime"]
+                ),
                 datetime_format,
             )
 
-            segment_sheet.write_datetime(
-                row, 3,
-                datetime.fromisoformat(segment["stopTime"]),
-                datetime_format,
-            )
+            if segment.get("stopTime"):
+                segment_sheet.write_datetime(
+                    row,
+                    3,
+                    datetime.fromisoformat(
+                        segment["stopTime"]
+                    ),
+                    datetime_format,
+                )
+            else:
+                segment_sheet.write(
+                    row,
+                    3,
+                    "",
+                    cell_format,
+                )
 
             segment_sheet.write_number(
-                row, 4,
+                row,
+                4,
                 segment["runTime"] / 3600,
                 number_format,
             )
 
             segment_sheet.write_number(
-                row, 5,
-                segment["massTotal"],
+                row,
+                5,
+                segment["realTotal"],
                 number_format,
             )
 
+            segment_sheet.write_number(
+                row,
+                6,
+                segment["wasteTotal"],
+                number_format,
+            )
+
+            segment_fields = [
+                "realSteam2Cond",
+                "realSteam2Extr",
+                "realWater2Cond",
+                "realOil2CondExtr",
+                "realWater2Extr",
+                "realAdd2CondExtr",
+                "realAdd5",
+                "realAdd6",
+            ]
+
+            for index, field in enumerate(segment_fields):
+                segment_sheet.write_number(
+                    row,
+                    7 + index,
+                    segment[field],
+                    number_format,
+                )
+
         segment_sheet.freeze_panes(1, 0)
+
         segment_sheet.autofilter(
-            0, 0, len(segments), len(segment_headers) - 1
+            0,
+            0,
+            len(segments),
+            len(segment_headers) - 1,
         )
 
         segment_sheet.set_column("A:B", 30)
         segment_sheet.set_column("C:D", 22)
-        segment_sheet.set_column("E:F", 15)
+        segment_sheet.set_column("E:O", 18)
 
         workbook.close()
 
         output.seek(0)
+
         return output.getvalue()

@@ -1,6 +1,8 @@
 from datetime import datetime
 
+
 def _build_stats(segments: list[dict]) -> dict:
+
     if not segments:
         return {
             "tonnes": 0.0,
@@ -9,20 +11,25 @@ def _build_stats(segments: list[dict]) -> dict:
         }
 
     tonnes = sum(
-        float(segment["massTotal"])
+        float(segment.get("realTotal") or 0)
         for segment in segments
     )
 
     hours = sum(
-        float(segment["runTime"])
+        float(segment.get("runTime") or 0)
         for segment in segments
     ) / 3600
 
     return {
         "tonnes": tonnes,
         "hours": hours,
-        "rate": tonnes / hours if hours > 0 else 0.0,
+        "rate": (
+            tonnes / hours
+            if hours > 0
+            else 0.0
+        ),
     }
+
 
 def calculate_production_statistics(
     segments: list[dict],
@@ -109,14 +116,17 @@ def calculate_production_unit_statistics(
         if segment.get("stopTime")
     ]
 
-    # Start time can still come from an open segment
+    # Start time can still come from an open segment.
     start_time = min(
         segment["startTime"]
         for segment in unit_segments
     )
 
     # If there is an open segment, there is no final stop time yet.
-    if any(not segment.get("stopTime") for segment in unit_segments):
+    if any(
+        not segment.get("stopTime")
+        for segment in unit_segments
+    ):
         stop_time = None
     else:
         stop_time = max(
@@ -124,54 +134,120 @@ def calculate_production_unit_statistics(
             for segment in unit_segments
         )
 
-    # Only use completed/closed segments for statistics.
-    mass = sum(
-        float(segment["massTotal"] or 0)
+    # --------------------------------------------------
+    # Basic production statistics
+    # --------------------------------------------------
+
+    real_total = sum(
+        float(segment.get("realTotal") or 0)
+        for segment in closed_segments
+    )
+
+    waste_total = sum(
+        float(segment.get("wasteTotal") or 0)
         for segment in closed_segments
     )
 
     runtime = sum(
-        float(segment["runTime"] or 0)
-        for segment in closed_segments
-    )
-
-    total_incl_additives = sum(
-        float(segment["totalInclAdditives"] or 0)
+        float(segment.get("runTime") or 0)
         for segment in closed_segments
     )
 
     hours = runtime / 3600
 
     rate = (
-        mass / hours
+        real_total / hours
         if hours > 0
         else 0.0
     )
 
-    additives = {}
+    # --------------------------------------------------
+    # Real production components
+    # --------------------------------------------------
 
-    for index in range(1, 6):
+    real_fields = [
+        "realSteam2Cond",
+        "realSteam2Extr",
+        "realWater2Cond",
+        "realOil2CondExtr",
+        "realWater2Extr",
+        "realAdd2CondExtr",
+        "realAdd5",
+        "realAdd6",
+    ]
 
-        key = f"add{index}Total"
+    real = {}
+
+    for field in real_fields:
 
         total = sum(
-            float(segment.get(key) or 0)
+            float(segment.get(field) or 0)
             for segment in closed_segments
         )
 
-        additives[f"add{index}"] = {
-            "mass": total,
-            "percent": (
-                total / total_incl_additives * 100
-                if total_incl_additives > 0
-                else 0.0
-            ),
-            "deviation":(
-                abs((total / total_incl_additives * 100) - setpoints[index - 1])
-                if total_incl_additives > 0 and setpoints is not None
-                else 0.0
+        real[field] = total
+
+    # --------------------------------------------------
+    # Waste components
+    # --------------------------------------------------
+
+    waste_fields = [
+        "wasteSteam2Cond",
+        "wasteSteam2Extr",
+        "wasteWater2Cond",
+        "wasteOil2CondExtr",
+        "wasteWater2Extr",
+        "wasteAdd2CondExtr",
+        "wasteAdd5",
+        "wasteAdd6",
+    ]
+
+    waste = {}
+
+    for field in waste_fields:
+
+        total = sum(
+            float(segment.get(field) or 0)
+            for segment in closed_segments
+        )
+
+        waste[field] = total
+
+    # --------------------------------------------------
+    # Percentages
+    # --------------------------------------------------
+
+    real_percentages = {}
+
+    for field, total in real.items():
+
+        real_percentages[field] = (
+            total / real_total * 100
+            if real_total > 0
+            else 0.0
+        )
+
+    # --------------------------------------------------
+    # Setpoint deviations
+    # --------------------------------------------------
+
+    deviations = {}
+
+    if setpoints is not None:
+
+        for index, field in enumerate(real_fields):
+
+            if index >= len(setpoints):
+                break
+
+            deviations[field] = abs(
+                real_percentages[field]
+                - setpoints[index]
             )
-        }
+
+    # --------------------------------------------------
+    # Return statistics
+    # --------------------------------------------------
 
     return {
         "segmentCount": len(unit_segments),
@@ -182,10 +258,15 @@ def calculate_production_unit_statistics(
         "runTime": runtime,
         "hours": hours,
 
-        "mass": mass,
+        "realTotal": real_total,
+        "wasteTotal": waste_total,
+
         "rate": rate,
 
-        "totalInclAdditives": total_incl_additives,
+        "real": real,
+        "realPercentages": real_percentages,
 
-        "additives": additives,
+        "waste": waste,
+
+        "deviations": deviations,
     }
