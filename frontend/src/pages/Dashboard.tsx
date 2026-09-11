@@ -6,7 +6,6 @@ import {
     TextField,
 } from '@mui/material';
 
-import { Skeleton } from "@andritzot/metris-web-ui/feedback/skeleton";
 
 import { Button} from '@andritzot/metris-web-ui/inputs/button';
 import { ButtonGroup} from '@andritzot/metris-web-ui/inputs/button-group';

@@ -85,7 +85,12 @@ class XlsxReportService:
                 if row > 0 and col == 1:
                     fmt = number_format
 
-                summary.write(row, col, value, fmt)
+                summary.write(
+                    row,
+                    col,
+                    value,
+                    fmt,
+                )
 
         summary.set_column("A:A", 28)
         summary.set_column("B:B", 20)
@@ -94,31 +99,35 @@ class XlsxReportService:
         # Production Units
         # --------------------------------------------------
 
-        production_sheet = workbook.add_worksheet("Production Units")
+        production_sheet = workbook.add_worksheet(
+            "Production Units"
+        )
 
         headers = [
             "Production ID",
             "Recipe",
-            "Real Total (t)",
-            "Waste Total (t)",
             "Runtime (hours)",
             "Rate (t/hour)",
-            "Steam 2 Cond (t)",
-            "Steam 2 Extr (t)",
-            "Water 2 Cond (t)",
-            "Oil 2 Cond Extr (t)",
-            "Water 2 Extr (t)",
-            "Add 2 Cond Extr (t)",
-            "Add 5 (t)",
-            "Add 6 (t)",
-            "Steam 2 Cond (%)",
-            "Steam 2 Extr (%)",
-            "Water 2 Cond (%)",
-            "Oil 2 Cond Extr (%)",
-            "Water 2 Extr (%)",
-            "Add 2 Cond Extr (%)",
-            "Add 5 (%)",
-            "Add 6 (%)",
+
+            "Real Total (t)",
+            "Real Steam to Conditioner (t)",
+            "Real Steam to Extruder (t)",
+            "Real Water to Conditioner (t)",
+            "Real Oil to Conditioner or Extruder (t)",
+            "Real Water to Extruder (t)",
+            "Real Add to Conditioner or Extruder (t)",
+            "Real Additive 5 (t)",
+            "Real Additive 6 (t)",
+
+            "Waste Total (t)",
+            "Waste Steam to Conditioner (t)",
+            "Waste Steam to Extruder (t)",
+            "Waste Water to Conditioner (t)",
+            "Waste Oil to Conditioner or Extruder (t)",
+            "Waste Water to Extruder (t)",
+            "Waste Additive to Conditioner or Extruder (t)",
+            "Waste Additive 5 (t)",
+            "Waste Additive 6 (t)",
         ]
 
         for col, header in enumerate(headers):
@@ -130,6 +139,7 @@ class XlsxReportService:
             )
 
         real_fields = [
+            "realTotal",
             "realSteam2Cond",
             "realSteam2Extr",
             "realWater2Cond",
@@ -138,6 +148,18 @@ class XlsxReportService:
             "realAdd2CondExtr",
             "realAdd5",
             "realAdd6",
+        ]
+
+        waste_fields = [
+            "wasteTotal",
+            "wasteSteam2Cond",
+            "wasteSteam2Extr",
+            "wasteWater2Cond",
+            "wasteOil2CondExtr",
+            "wasteWater2Extr",
+            "wasteAdd2CondExtr",
+            "wasteAdd5",
+            "wasteAdd6",
         ]
 
         for row, unit in enumerate(
@@ -163,50 +185,47 @@ class XlsxReportService:
             production_sheet.write(
                 row,
                 2,
-                stats["realTotal"],
-                number_format,
-            )
-
-            production_sheet.write(
-                row,
-                3,
-                stats["wasteTotal"],
-                number_format,
-            )
-
-            production_sheet.write(
-                row,
-                4,
                 stats["hours"],
                 number_format,
             )
 
             production_sheet.write(
                 row,
-                5,
+                3,
                 stats["rate"],
                 number_format,
             )
 
-            # Real material masses
+            # REAL values
             for index, field in enumerate(real_fields):
                 production_sheet.write(
                     row,
-                    6 + index,
-                    stats["real"][field],
+                    4 + index,
+                    (
+                        stats[field]
+                        if field in stats
+                        else stats["real"][field]
+                    ),
                     number_format,
                 )
 
-            # Real material percentages
-            for index, field in enumerate(real_fields):
+            # WASTE values
+            for index, field in enumerate(waste_fields):
                 production_sheet.write(
                     row,
-                    14 + index,
-                    stats["realPercentages"][field],
+                    13 + index,
+                    (
+                        stats[field]
+                        if field in stats
+                        else stats["waste"][field]
+                    ),
                     number_format,
                 )
 
-        production_sheet.freeze_panes(1, 0)
+        production_sheet.freeze_panes(
+            1,
+            0,
+        )
 
         production_sheet.autofilter(
             0,
@@ -215,16 +234,33 @@ class XlsxReportService:
             len(headers) - 1,
         )
 
-        production_sheet.set_column("A:A", 18)
-        production_sheet.set_column("B:B", 25)
-        production_sheet.set_column("C:F", 18)
-        production_sheet.set_column("G:V", 18)
+        production_sheet.set_column(
+            "A:A",
+            18,
+        )
+
+        production_sheet.set_column(
+            "B:B",
+            25,
+        )
+
+        production_sheet.set_column(
+            "C:D",
+            18,
+        )
+
+        production_sheet.set_column(
+            "E:V",
+            20,
+        )
 
         # --------------------------------------------------
         # Segments
         # --------------------------------------------------
 
-        segment_sheet = workbook.add_worksheet("Segments")
+        segment_sheet = workbook.add_worksheet(
+            "Segments"
+        )
 
         segment_headers = [
             "Segment ID",
@@ -232,16 +268,26 @@ class XlsxReportService:
             "Start",
             "Stop",
             "Runtime (hours)",
+
             "Real Total (t)",
+            "Real Steam to Conditioner (t)",
+            "Real Steam to Extruder (t)",
+            "Real Water to Conditioner (t)",
+            "Real Oil to Conditioner or Extruder (t)",
+            "Real Water to Extruder (t)",
+            "Real Add to Conditioner or Extruder (t)",
+            "Real Additive 5 (t)",
+            "Real Additive 6 (t)",
+
             "Waste Total (t)",
-            "Steam 2 Cond (t)",
-            "Steam 2 Extr (t)",
-            "Water 2 Cond (t)",
-            "Oil 2 Cond Extr (t)",
-            "Water 2 Extr (t)",
-            "Add 2 Cond Extr (t)",
-            "Add 5 (t)",
-            "Add 6 (t)",
+            "Waste Steam to Conditioner (t)",
+            "Waste Steam to Extruder (t)",
+            "Waste Water to Conditioner (t)",
+            "Waste Oil to Conditioner or Extruder (t)",
+            "Waste Water to Extruder (t)",
+            "Waste Additive to Conditioner or Extruder (t)",
+            "Waste Additive 5 (t)",
+            "Waste Additive 6 (t)",
         ]
 
         for col, header in enumerate(segment_headers):
@@ -251,6 +297,30 @@ class XlsxReportService:
                 header,
                 header_format,
             )
+
+        real_segment_fields = [
+            "realTotal",
+            "realSteam2Cond",
+            "realSteam2Extr",
+            "realWater2Cond",
+            "realOil2CondExtr",
+            "realWater2Extr",
+            "realAdd2CondExtr",
+            "realAdd5",
+            "realAdd6",
+        ]
+
+        waste_segment_fields = [
+            "wasteTotal",
+            "wasteSteam2Cond",
+            "wasteSteam2Extr",
+            "wasteWater2Cond",
+            "wasteOil2CondExtr",
+            "wasteWater2Extr",
+            "wasteAdd2CondExtr",
+            "wasteAdd5",
+            "wasteAdd6",
+        ]
 
         for row, segment in enumerate(
             segments,
@@ -303,40 +373,32 @@ class XlsxReportService:
                 number_format,
             )
 
-            segment_sheet.write_number(
-                row,
-                5,
-                segment["realTotal"],
-                number_format,
-            )
-
-            segment_sheet.write_number(
-                row,
-                6,
-                segment["wasteTotal"],
-                number_format,
-            )
-
-            segment_fields = [
-                "realSteam2Cond",
-                "realSteam2Extr",
-                "realWater2Cond",
-                "realOil2CondExtr",
-                "realWater2Extr",
-                "realAdd2CondExtr",
-                "realAdd5",
-                "realAdd6",
-            ]
-
-            for index, field in enumerate(segment_fields):
+            # REAL values
+            for index, field in enumerate(
+                real_segment_fields
+            ):
                 segment_sheet.write_number(
                     row,
-                    7 + index,
+                    5 + index,
                     segment[field],
                     number_format,
                 )
 
-        segment_sheet.freeze_panes(1, 0)
+            # WASTE values
+            for index, field in enumerate(
+                waste_segment_fields
+            ):
+                segment_sheet.write_number(
+                    row,
+                    14 + index,
+                    segment[field],
+                    number_format,
+                )
+
+        segment_sheet.freeze_panes(
+            1,
+            0,
+        )
 
         segment_sheet.autofilter(
             0,
@@ -345,9 +407,24 @@ class XlsxReportService:
             len(segment_headers) - 1,
         )
 
-        segment_sheet.set_column("A:B", 30)
-        segment_sheet.set_column("C:D", 22)
-        segment_sheet.set_column("E:O", 18)
+        segment_sheet.set_column(
+            "A:B",
+            30,
+        )
+
+        segment_sheet.set_column(
+            "C:D",
+            22,
+        )
+
+        segment_sheet.set_column(
+            "E:W",
+            20,
+        )
+
+        # --------------------------------------------------
+        # Finalize workbook
+        # --------------------------------------------------
 
         workbook.close()
 

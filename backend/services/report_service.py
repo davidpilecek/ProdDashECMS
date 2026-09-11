@@ -17,6 +17,7 @@ from reportlab.platypus import (
     PageBreak,
 )
 
+from reportlab.lib.styles import ParagraphStyle
 from services.report_graph_service import generate_production_graph
 from services.production_service import load_production_month
 from services.statistics_service import calculate_production_statistics
@@ -51,6 +52,12 @@ def convert_runtime_to_days_hours(
 
     return day, hour, minutes, seconds
 
+def formatRuntime(seconds: float) -> str:
+    hours_new = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    remainingSeconds = int(seconds % 60)
+
+    return f"{hours_new} h {minutes} min {remainingSeconds} s"
 
 class ReportHeader(Flowable):
 
@@ -168,6 +175,15 @@ class ReportService:
         )
 
         styles = getSampleStyleSheet()
+
+        table_style = ParagraphStyle(
+                    "TableText",
+                    parent=styles["BodyText"],
+                    fontSize=10,
+                    leading=10,
+                    wordWrap="CJK",
+                )
+        
         elements = []
 
         # --------------------------------------------------
@@ -341,46 +357,53 @@ class ReportService:
             [
                 "Production ID",
                 "Recipe",
-                "Real Total",
-                "Waste",
-                "Runtime",
-                "Rate",
-                "Real Production",
+                "Start / Stop",
+                "Produced",
+                "Avg Rate",
+                "Production Real (Waste)",
             ]
         ]
 
-        real_fields = [
+        production_fields = [
             (
                 "Steam 2 Cond",
                 "realSteam2Cond",
+                "wasteSteam2Cond",
             ),
             (
                 "Steam 2 Extr",
                 "realSteam2Extr",
+                "wasteSteam2Extr",
             ),
             (
                 "Water 2 Cond",
                 "realWater2Cond",
+                "wasteWater2Cond",
             ),
             (
                 "Oil 2 Cond Extr",
                 "realOil2CondExtr",
+                "wasteOil2CondExtr",
             ),
             (
                 "Water 2 Extr",
                 "realWater2Extr",
+                "wasteWater2Extr",
             ),
             (
                 "Add 2 Cond Extr",
                 "realAdd2CondExtr",
+                "wasteAdd2CondExtr",
             ),
             (
                 "Add 5",
                 "realAdd5",
+                "wasteAdd5",
             ),
             (
                 "Add 6",
                 "realAdd6",
+                "wasteAdd6",
             ),
         ]
 
@@ -388,38 +411,72 @@ class ReportService:
 
             stats = unit["statistics"]
 
+            if stats["stopTime"]:
+                stop_time = stats["stopTime"].replace(
+                    "T",
+                    " ",
+                )
+            else:
+                stop_time = "-"
+
             real_lines = [
                 (
                     f"{label}: "
-                    f"{stats['real'][field]:.2f} t "
-                    f"({stats['realPercentages'][field]:.2f}%)"
+                    f"{stats['real'][real_field]:.2f} t "
+                    f"({stats['waste'][waste_field]:.2f} t)"
                 )
-                for label, field in real_fields
+                for label, real_field, waste_field
+                in production_fields
             ]
 
             production_rows.append([
-                unit["prodId"],
-                unit["recipeName"],
-                f"{stats['realTotal']:.2f} t",
-                f"{stats['wasteTotal']:.2f} t",
-                f"{stats['hours']:.2f} h",
-                f"{stats['rate']:.2f} t/h",
+                Paragraph(
+                    str(unit["prodId"]),
+                    table_style,
+                ),
+
+                Paragraph(
+                    str(unit["recipeName"]),
+                    table_style,
+                ),
+
+                Paragraph(
+                    "<br/>".join([
+                        stats["startTime"].replace(
+                            "T",
+                            " ",
+                        ),
+                        stop_time,
+                    ]),
+                    table_style,
+                ),
+
+                Paragraph(
+                    f"{stats['realTotal']:.2f} t "
+                    f"({stats['wasteTotal']:.2f} t)",
+                    table_style,
+                ),
+
+                Paragraph(
+                    f"{stats['rate']:.2f} t/h",
+                    table_style,
+                ),
+
                 Paragraph(
                     "<br/>".join(real_lines),
-                    styles["BodyText"],
+                    table_style,
                 ),
             ])
 
         production_table = Table(
             production_rows,
             colWidths=[
-                28 * mm,
+                30 * mm,
+                23 * mm,
+                40 * mm,
                 25 * mm,
-                23 * mm,
-                20 * mm,
-                20 * mm,
-                23 * mm,
-                61 * mm,
+                22 * mm,
+                63 * mm,
             ],
             repeatRows=1,
         )
