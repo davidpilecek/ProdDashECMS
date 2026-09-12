@@ -4,7 +4,6 @@ import type {
     ProductionStatistics,
 } from "../types/Production";
 
-// const API_BASE_URL = "http://127.0.0.1:5000";
 
 interface ProductionSegmentResponse
     extends Omit<ProductionSegment, "startTime" | "stopTime"> {

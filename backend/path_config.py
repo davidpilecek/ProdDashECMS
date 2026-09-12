@@ -9,7 +9,7 @@ if getattr(sys, "frozen", False):
     DATA_DIR = (
         Path(os.environ.get("PROGRAMDATA", Path.home()))
         / "ANDRITZ"
-        / "ProdDashMCMS"
+        / "ProdDashECMS"
         / "data"
     )
 

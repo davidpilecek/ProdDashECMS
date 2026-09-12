@@ -452,8 +452,10 @@ class ReportService:
                 ),
 
                 Paragraph(
-                    f"{stats['realTotal']:.2f} t "
-                    f"({stats['wasteTotal']:.2f} t)",
+                    "<br/>".join([
+                        f"Real: {stats['realTotal']:.2f} t ",
+                        f"Waste: {stats['wasteTotal']:.2f} t",
+                    ]),
                     table_style,
                 ),
 
@@ -474,8 +476,8 @@ class ReportService:
                 30 * mm,
                 23 * mm,
                 40 * mm,
-                25 * mm,
-                22 * mm,
+                30 * mm,
+                20 * mm,
                 63 * mm,
             ],
             repeatRows=1,

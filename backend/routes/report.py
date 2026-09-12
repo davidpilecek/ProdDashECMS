@@ -120,7 +120,7 @@ def generate_xlsx_report():
         }), 500
 
 csv_service = CsvService(
-    Path(r"C:\ProgramData\Andritz\ProdDashMCMS\data")
+    Path(r"C:\ProgramData\Andritz\ProdDashECMS\data")
 )
 
 
