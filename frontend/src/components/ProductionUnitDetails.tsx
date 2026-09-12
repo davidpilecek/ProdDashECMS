@@ -121,7 +121,7 @@ export default function ProductionUnitDetails({
             <Box
                 sx={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gridTemplateColumns: "2fr 1fr 1fr",
                     columnGap: 2,
                     rowGap: 1,
                 }}
