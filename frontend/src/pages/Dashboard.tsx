@@ -49,7 +49,6 @@ const months = [
 ];
 
 const years = [
-    2025,
     2026,
 ];
 
@@ -89,6 +88,10 @@ export default function Dashboard() {
             setLoading(true);
             setError(null);
 
+            // Clear the previous month's data immediately.
+            setProductionMonth(null);
+            setSelectedSegmentId(null);
+
             try {
 
                 const data = await getProductionMonth(
@@ -104,6 +107,9 @@ export default function Dashboard() {
                     "Failed to load production data:",
                     err,
                 );
+            
+                setProductionMonth(null);
+                setSelectedSegmentId(null);
 
                 setError(
                     "Failed to load production data.",
@@ -142,7 +148,6 @@ export default function Dashboard() {
                 ),
         [segments],
     );
-
 
     // --------------------------------------------------
     // Reset selection when month/data changes
@@ -405,7 +410,7 @@ return (
 
 <Panels.Item
     defaultSize="70%"
-    minSize="55%"
+    minSize="70%"
     surface
 >
     <Stack

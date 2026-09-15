@@ -53,11 +53,11 @@ def convert_runtime_to_days_hours(
     return day, hour, minutes, seconds
 
 def formatRuntime(seconds: float) -> str:
-    hours_new = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    remainingSeconds = int(seconds % 60)
-
-    return f"{hours_new} h {minutes} min {remainingSeconds} s"
+    day, hour, minutes, seconds = convert_runtime_to_days_hours(seconds)
+    if day == 0:
+        return f"{hour:.0f} h {minutes:.0f} min {seconds:.0f} s"
+    else:  
+        return f"{day:.0f} d {hour:.0f} h {minutes:.0f} min {seconds:.0f} s"
 
 class ReportHeader(Flowable):
 
@@ -357,10 +357,10 @@ class ReportService:
             [
                 "Production ID",
                 "Recipe",
-                "Start / Stop",
-                "Produced",
-                "Avg Rate",
-                "Production Real (Waste)",
+                "Start, Stop",
+                "Mass",
+                "Runtime",
+                "Production (Waste)",
             ]
         ]
 
@@ -430,26 +430,11 @@ class ReportService:
             ]
 
             production_rows.append([
-                Paragraph(
-                    str(unit["prodId"]),
-                    table_style,
-                ),
-
-                Paragraph(
-                    str(unit["recipeName"]),
-                    table_style,
-                ),
-
-                Paragraph(
-                    "<br/>".join([
-                        stats["startTime"].replace(
-                            "T",
-                            " ",
-                        ),
-                        stop_time,
-                    ]),
-                    table_style,
-                ),
+                Paragraph(str(unit["prodId"]), table_style),
+                Paragraph(str(unit["recipeName"]), table_style),
+                Paragraph("<br/>".join([
+                    f"{stats['startTime'].replace('T', ' ')}",
+                    f"{stats['stopTime'].replace('T', ' ')}"]), table_style),
 
                 Paragraph(
                     "<br/>".join([
@@ -460,7 +445,7 @@ class ReportService:
                 ),
 
                 Paragraph(
-                    f"{stats['rate']:.2f} t/h",
+                    f"{formatRuntime(stats['runTime'])}",
                     table_style,
                 ),
 
@@ -561,7 +546,7 @@ class ReportService:
                 "Start",
                 "Stop",
                 "Runtime",
-                "Real Total",
+                "Real Mass",
                 "Waste",
             ]
         ]

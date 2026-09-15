@@ -76,7 +76,7 @@ def load_segments(month: int, year: int) -> list[dict]:
     ) as file:
 
         reader = csv.DictReader(file)
-        rows = [_parse_segment(row) for row in reader if row["RUN_TIME"]]
+        rows = [_parse_segment(row) for row in reader if row["RUN_TIME"] and float(row["RUN_TIME"]) > 0]
 
         return rows
 
