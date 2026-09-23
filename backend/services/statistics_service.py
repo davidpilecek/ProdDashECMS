@@ -228,24 +228,6 @@ def calculate_production_unit_statistics(
         )
 
     # --------------------------------------------------
-    # Setpoint deviations
-    # --------------------------------------------------
-
-    deviations = {}
-
-    if setpoints is not None:
-
-        for index, field in enumerate(real_fields):
-
-            if index >= len(setpoints):
-                break
-
-            deviations[field] = abs(
-                real_percentages[field]
-                - setpoints[index]
-            )
-
-    # --------------------------------------------------
     # Return statistics
     # --------------------------------------------------
 
@@ -267,6 +249,4 @@ def calculate_production_unit_statistics(
         "realPercentages": real_percentages,
 
         "waste": waste,
-
-        "deviations": deviations,
     }
