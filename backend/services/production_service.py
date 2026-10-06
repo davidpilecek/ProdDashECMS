@@ -1,6 +1,6 @@
 import csv
 from pathlib import Path
-
+import re
 from services.statistics_service import (
     calculate_production_unit_statistics,
 )
@@ -59,6 +59,49 @@ def _parse_segment(row: dict) -> dict:
     
     }
 
+def get_available_production_periods():
+    """
+    Find all months/years for which production segment data exists.
+
+    Files are expected to follow the naming convention:
+
+        MMYYYY_PROD_SEGMENT.csv
+
+    Returns:
+        [
+            {"year": 2025, "month": 11},
+            {"year": 2026, "month": 1},
+            ...
+        ]
+    """
+
+    periods = []
+
+    pattern = re.compile(r"^(0[1-9]|1[0-2])(\d{4})_PROD_SEGMENT\.csv$")
+
+    if not DATA_DIR.exists():
+        return periods
+
+    for file in DATA_DIR.iterdir():
+        if not file.is_file():
+            continue
+
+        match = pattern.match(file.name)
+
+        if not match:
+            continue
+
+        month = int(match.group(1))
+        year = int(match.group(2))
+
+        periods.append({
+            "year": year,
+            "month": month,
+        })
+
+    periods.sort(key=lambda period: (period["year"], period["month"]))
+
+    return periods
 def load_segments(month: int, year: int) -> list[dict]:
 
     filename = _get_filename(

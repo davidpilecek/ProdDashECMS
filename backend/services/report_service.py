@@ -4,7 +4,7 @@ from datetime import datetime
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Flowable,
@@ -17,7 +17,6 @@ from reportlab.platypus import (
     PageBreak,
 )
 
-from reportlab.lib.styles import ParagraphStyle
 from services.report_graph_service import generate_production_graph
 from services.production_service import load_production_month
 from services.statistics_service import calculate_production_statistics
@@ -111,34 +110,15 @@ class ReportHeader(Flowable):
         )
 
         # Report Title
-        canvas.setFont(
-            "Helvetica-Bold",
-            18,
-        )
+        canvas.setFont("Helvetica-Bold", 18)
 
-        canvas.setFillColor(
-            PRIMARY
-        )
-
-        canvas.drawString(
-            38 * mm,
-            0 * mm,
-            self.title,
-        )
+        canvas.setFillColor(PRIMARY)
+        canvas.drawString(38 * mm, 0 * mm, self.title)
 
         # Decorative Separator Line
-        canvas.setStrokeColor(
-            PRIMARY
-        )
-
+        canvas.setStrokeColor(PRIMARY)
         canvas.setLineWidth(1.5)
-
-        canvas.line(
-            0,
-            -5 * mm,
-            self.width,
-            -5 * mm,
-        )
+        canvas.line(0, -5 * mm, self.width, -5 * mm)
 
 
 class ReportService:

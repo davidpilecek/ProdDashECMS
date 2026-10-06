@@ -6,7 +6,6 @@ import {
     TextField,
 } from '@mui/material';
 
-
 import { Button} from '@andritzot/metris-web-ui/inputs/button';
 import { ButtonGroup} from '@andritzot/metris-web-ui/inputs/button-group';
 
@@ -24,33 +23,16 @@ import {
     generatePdfReport,
     generateExcelReport,
     downloadCsvExport,
+    getAvailableProductionPeriods,
 } from "../api/productionApi";
 
 import type {
     ProductionMonth,
+    ProductionPeriod,
     ProductionStatistics,
 } from "../types/Production";
 
 import {useEffect, useMemo, useState } from 'react';
-
-const months = [
-    { value: 1, label: "January" },
-    { value: 2, label: "February" },
-    { value: 3, label: "March" },
-    { value: 4, label: "April" },
-    { value: 5, label: "May" },
-    { value: 6, label: "June" },
-    { value: 7, label: "July" },
-    { value: 8, label: "August" },
-    { value: 9, label: "September" },
-    { value: 10, label: "October" },
-    { value: 11, label: "November" },
-    { value: 12, label: "December" },
-];
-
-const years = [
-    2026,
-];
 
 export default function Dashboard() {
 
@@ -58,11 +40,14 @@ export default function Dashboard() {
     // State
     // --------------------------------------------------
 
-    const [displayedMonth, setDisplayedMonth] =
-        useState(1);
+    const [availablePeriods, setAvailablePeriods] = useState<
+        ProductionPeriod[]
+    >([]);
 
-    const [displayedYear, setDisplayedYear] =
-        useState(2026);
+    const [displayedMonth, setDisplayedMonth] = useState<number | null>(null);
+    const [displayedYear, setDisplayedYear] = useState<number | null>(null);
+    
+    const [loadingPeriods, setLoadingPeriods] = useState(true);
 
     const [productionMonth, setProductionMonth] =
         useState<ProductionMonth | null>(null);
@@ -78,31 +63,112 @@ export default function Dashboard() {
 
 
     // --------------------------------------------------
-    // Load production data
+    // Load available months and years
     // --------------------------------------------------
 
     useEffect(() => {
+        const loadAvailablePeriods = async () => {
+            try {
+                setLoadingPeriods(true);
+
+                const periods = await getAvailableProductionPeriods();
+
+                setAvailablePeriods(periods);
+
+                if (periods.length > 0) {
+                    const latestPeriod = periods[periods.length - 1];
+
+                    setDisplayedYear(latestPeriod.year);
+                    setDisplayedMonth(latestPeriod.month);
+                }
+            } catch (error) {
+                console.error(
+                    "Failed to load available production periods:",
+                    error,
+                );
+            } finally {
+                setLoadingPeriods(false);
+            }
+        };
+
+        loadAvailablePeriods();
+    }, []);
+
+
+// Available years
+const years = Array.from(
+    new Set(availablePeriods.map((period) => period.year)),
+).sort((a, b) => a - b);
+
+
+// Available months for selected year
+const availableMonths = availablePeriods
+    .filter((period) => period.year === displayedYear)
+    .map((period) => period.month)
+    .sort((a, b) => a - b);
+
+
+// Convert month numbers to selector options
+const months = availableMonths.map((month) => ({
+    value: month,
+    label: new Date(2000, month - 1, 1).toLocaleString(
+        "en-US",
+        {
+            month: "long",
+        },
+    ),
+}));
+
+// Change year
+const handleYearChange = (year: number) => {
+    setDisplayedYear(year);
+
+    const monthsForYear = availablePeriods
+        .filter((period) => period.year === year)
+        .map((period) => period.month)
+        .sort((a, b) => a - b);
+
+    if (
+        displayedMonth === null ||
+        !monthsForYear.includes(displayedMonth)
+    ) {
+        setDisplayedMonth(
+            monthsForYear[monthsForYear.length - 1]
+        );
+    }
+};
+
+    // --------------------------------------------------
+    // Load production data
+    // --------------------------------------------------
+useEffect(() => {
+    if (
+        displayedMonth === null ||
+        displayedYear === null
+    ) {
+        return;
+    }
+
+    // TypeScript now knows these are definitely numbers
+    const month = displayedMonth;
+    const year = displayedYear;
 
         async function loadMonth() {
-
             setLoading(true);
             setError(null);
 
-            // Clear the previous month's data immediately.
             setProductionMonth(null);
             setSelectedSegmentId(null);
 
             try {
-
                 const data = await getProductionMonth(
-                    displayedMonth,
-                    displayedYear,
+                    month,
+                    year,
                 );
 
                 setProductionMonth(data);
 
             } catch (err) {
-
                 console.error(
                     "Failed to load production data:",
                     err,
@@ -116,9 +182,7 @@ export default function Dashboard() {
                 );
 
             } finally {
-
                 setLoading(false);
-
             }
         }
 
@@ -149,6 +213,8 @@ export default function Dashboard() {
         [segments],
     );
 
+
+
     // --------------------------------------------------
     // Reset selection when month/data changes
     // --------------------------------------------------
@@ -165,7 +231,6 @@ export default function Dashboard() {
         );
 
     }, [orderedSegmentIds]);
-
 
     // --------------------------------------------------
     // Selected segment
@@ -199,23 +264,27 @@ export default function Dashboard() {
 
 const [statistics, setStatistics] =
     useState<ProductionStatistics | null>(null);
-
 useEffect(() => {
-    if (!selectedSegmentId) {
+    if (
+        !selectedSegmentId ||
+        displayedMonth === null ||
+        displayedYear === null
+    ) {
         setStatistics(null);
         return;
     }
 
+    const month = displayedMonth;
+    const year = displayedYear;
     const segmentId = selectedSegmentId;
 
     async function loadStatistics() {
         try {
-            const data =
-                await getProductionStatistics(
-                    displayedMonth,
-                    displayedYear,
-                    segmentId,
-                );
+            const data = await getProductionStatistics(
+                month,
+                year,
+                segmentId,
+            );
 
             setStatistics(data);
 
@@ -224,6 +293,7 @@ useEffect(() => {
                 "Failed to load production statistics:",
                 error,
             );
+
             setStatistics(null);
         }
     }
@@ -283,7 +353,43 @@ useEffect(() => {
     // --------------------------------------------------
 
 
-
+if (!loadingPeriods && availablePeriods.length === 0) {
+    return (
+        <Box
+            sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+            }}
+        >
+            <Typography variant="body1">
+                No production data available.
+            </Typography>
+        </Box>
+    );
+}
+if (
+    displayedMonth === null ||
+    displayedYear === null
+) {
+    return (
+        <Box
+            sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+            }}
+        >
+            <Typography variant="body1">
+                Loading production period...
+            </Typography>
+        </Box>
+    );
+}
 
     // --------------------------------------------------
     // UI
@@ -313,7 +419,7 @@ return (
                     select
                     size="small"
                     label="Month"
-                    value={displayedMonth}
+                    value={displayedMonth ?? ""}
                     onChange={(event) => {
                         setDisplayedMonth(
                             Number(event.target.value),
@@ -336,11 +442,9 @@ return (
                     size="small"
                     label="Year"
                     value={displayedYear}
-                    onChange={(event) => {
-                        setDisplayedYear(
-                            Number(event.target.value),
-                        );
-                    }}
+                    onChange={(event) =>
+                        handleYearChange(Number(event.target.value))
+                    }
                     sx={{ minWidth: 120 }}
                 >
                     {years.map((year) => (

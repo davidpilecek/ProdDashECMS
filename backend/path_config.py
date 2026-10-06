@@ -6,12 +6,17 @@ from pathlib import Path
 if getattr(sys, "frozen", False):
     APP_DIR = Path(sys._MEIPASS)
 
-    DATA_DIR = (
-        Path(os.environ.get("PROGRAMDATA", Path.home()))
-        / "ANDRITZ"
-        / "ProdDashECMS"
-        / "data"
-    )
+    configured_data_dir = os.environ.get("PRODDASH_DATA_DIR")
+
+    if configured_data_dir:
+        DATA_DIR = Path(configured_data_dir)
+    else:
+        DATA_DIR = (
+            Path(os.environ.get("PROGRAMDATA", Path.home()))
+            / "ANDRITZ"
+            / "ProdDashECMS"
+            / "data"
+        )
 
     FRONTEND_DIR = APP_DIR / "frontend"
 
@@ -20,7 +25,14 @@ else:
     PROJECT_DIR = BACKEND_DIR.parent
 
     APP_DIR = BACKEND_DIR
-    DATA_DIR = BACKEND_DIR / "data"
+    
+    configured_data_dir = os.environ.get("PRODDASH_DATA_DIR")
+
+    if configured_data_dir:
+        DATA_DIR = Path(configured_data_dir)
+    else:
+        DATA_DIR = BACKEND_DIR / "data"
+
     FRONTEND_DIR = PROJECT_DIR / "frontend" / "dist"
 
 

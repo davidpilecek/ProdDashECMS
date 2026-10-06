@@ -95,7 +95,6 @@ def calculate_production_statistics(
 def calculate_production_unit_statistics(
     segments: list[dict],
     prod_id: str,
-    setpoints: list[float] | None = None,
 ) -> dict:
 
     unit_segments = [
@@ -105,9 +104,46 @@ def calculate_production_unit_statistics(
     ]
 
     if not unit_segments:
-        raise ValueError(
-            f"Production unit not found: {prod_id}"
-        )
+        return{
+                "segmentCount": 0,
+                "startTime": None,
+                "stopTime": None,
+                "runTime": 0.0,
+                "hours": 0.0,
+                "realTotal": 0.0,
+                "wasteTotal": 0.0,
+                "rate": 0.0,
+                "real": {
+                    "realSteam2Cond": 0.0,
+                    "realSteam2Extr": 0.0,
+                    "realWater2Cond": 0.0,
+                    "realOil2CondExtr": 0.0,
+                    "realWater2Extr": 0.0,
+                    "realAdd2CondExtr": 0.0,
+                    "realAdd5": 0.0,
+                    "realAdd6": 0.0,
+                },
+                "waste": {
+                    "wasteSteam2Cond": 0.0,
+                    "wasteSteam2Extr": 0.0,
+                    "wasteWater2Cond": 0.0,
+                    "wasteOil2CondExtr": 0.0,
+                    "wasteWater2Extr": 0.0,
+                    "wasteAdd2CondExtr": 0.0,
+                    "wasteAdd5": 0.0,
+                    "wasteAdd6": 0.0,
+                },
+                "realPercentages": {
+                    "realSteam2Cond": 0.0,
+                    "realSteam2Extr": 0.0,
+                    "realWater2Cond": 0.0,
+                    "realOil2CondExtr": 0.0,
+                    "realWater2Extr": 0.0,
+                    "realAdd2CondExtr": 0.0,
+                    "realAdd5": 0.0,
+                    "realAdd6": 0.0,
+                },
+                }
 
     # An open segment has an empty stopTime.
     closed_segments = [

@@ -3,6 +3,11 @@ export interface DashboardMonth {
     label: string;
 }
 
+export type ProductionPeriod = {
+    year: number;
+    month: number;
+};
+
 export interface OverviewMetric {
     label: string;
     value: string;

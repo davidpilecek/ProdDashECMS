@@ -2,8 +2,27 @@ import type {
     ProductionMonth,
     ProductionSegment,
     ProductionStatistics,
+    ProductionPeriod,
 } from "../types/Production";
 
+export async function getAvailableProductionPeriods(): Promise<
+    ProductionPeriod[]
+> {
+    const response = await fetch(
+        `/api/production/available`,
+    );
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to fetch available production periods: ${response.status}`,
+        );
+    }
+
+    const data: { periods: ProductionPeriod[] } =
+        await response.json();
+
+    return data.periods;
+}
 
 interface ProductionSegmentResponse
     extends Omit<ProductionSegment, "startTime" | "stopTime"> {
