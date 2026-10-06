@@ -1,9 +1,5 @@
 import argparse
 import os
-# These imports must happen after PRODDASH_DATA_DIR is set.
-from waitress import serve
-from app import create_app
-from path_config import FRONTEND_DIR, DATA_DIR
 
 def main():
     parser = argparse.ArgumentParser()
@@ -25,6 +21,12 @@ def main():
     # Set the data directory BEFORE importing the Flask application.
     if args.data_dir:
         os.environ["PRODDASH_DATA_DIR"] = args.data_dir
+
+    # These imports must happen after PRODDASH_DATA_DIR is set.
+    from waitress import serve
+    from app import create_app
+    from path_config import FRONTEND_DIR, DATA_DIR
+
 
     print(f"Starting ProdDashECMS")
     print(f"Port: {args.port}")

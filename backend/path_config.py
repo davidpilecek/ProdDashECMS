@@ -2,7 +2,6 @@ import os
 import sys
 from pathlib import Path
 
-
 if getattr(sys, "frozen", False):
     APP_DIR = Path(sys._MEIPASS)
 
